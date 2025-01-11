@@ -1,0 +1,99 @@
+
+
+(defun olivia/pacman ()
+  "Use ivy to interactively run pacman/yay commands."
+  (interactive)
+  (let* ((commands '(("Install" . "sudo pacman -S") 
+                     ("Update (Pacman)" . "sudo pacman -Syu") 
+                     ("Update (Yay)" . "yay -Syu") 
+                     ("Reinstall" . "sudo pacman -S --reinstall") 
+                     ("Remove" . "sudo pacman -Rns") 
+                     ("Search (Pacman)" . "pacman -Ss") 
+                     ("Search (Yay)" . "yay -Ss") 
+                     ("Clean Cache" . "sudo pacman -Sc")
+                     ("Clean Orphans" . "sudo pacman -Rns $(pacman -Qdtq)")))
+         (choice (ivy-read "Select Pacman/Yay Command: " 
+                           (mapcar #'car commands)))
+         (command (cdr (assoc choice commands)))
+         (pkg (if (string-match-p "Search\\|Install\\|Reinstall\\|Remove" choice)
+                  (read-string "Package Name: "))))
+    (when (and (string= pkg "") (string-match-p "pkg" command))
+      (error "This command requires a package name."))
+    (let ((full-command (if pkg (concat command " " pkg) command)))
+      (async-shell-command full-command "*Pacman Output*"))))
+
+
+
+ 
+
+(defvar olivia/search-web-history nil "History for web searches.")
+(defvar olivia/youtube-search-history nil "History for YouTube searches.")
+(defvar olivia/url-https-history nil "History for HTTPS URLs.")
+(defvar olivia/url-http-history nil "History for HTTP URLs.")
+
+(defvar olivia/search-web-history nil "History for web searches.")
+(defvar olivia/youtube-search-history nil "History for YouTube searches.")
+(defvar olivia/url-https-history nil "History for HTTPS URLs.")
+(defvar olivia/url-http-history nil "History for HTTP URLs.")
+
+(defun olivia/M-x ()
+  (interactive)
+  (ivy-read (concat (getenv "USER") ": ")
+            '("M-x"
+              "web-search"
+              "web-search-youtube"
+              "web-url-https"
+              "web-url-http"
+              "run-shell"
+              "close-buffer"
+              "pacman"
+              "lsp")
+            :action (lambda (selection)
+                      (cond
+                       ((string= selection "web-search")
+                        (ivy-read "Enter search query: "
+                                  (delete-dups olivia/search-web-history)
+                                  :action (lambda (query)
+                                            (add-to-list 'olivia/search-web-history query)
+                                            (browse-url (concat "https://duckduckgo.com/?t=ffab&q=" (url-hexify-string query))))))
+
+                       ((string= selection "web-search-youtube")
+                        (ivy-read "Enter YouTube search query: "
+                                  (delete-dups olivia/youtube-search-history)
+                                  :action (lambda (query)
+                                            (add-to-list 'olivia/youtube-search-history query)
+                                            (browse-url (concat "https://www.youtube.com/results?search_query=" (url-hexify-string query))))))
+
+                       ((string= selection "web-url-https")
+                        (ivy-read "Enter HTTPS URL: "
+                                  (delete-dups olivia/url-https-history)
+                                  :action (lambda (query)
+                                            (add-to-list 'olivia/url-https-history query)
+                                            (browse-url (concat "https://" query)))))
+
+                       ((string= selection "web-url-http")
+                        (ivy-read "Enter HTTP URL: "
+                                  (delete-dups olivia/url-http-history)
+                                  :action (lambda (query)
+                                            (add-to-list 'olivia/url-http-history query)
+                                            (browse-url (concat "http://" query)))))
+
+                       ((string= selection "run-shell")
+                        (ivy-read "Shell: "
+                                  (split-string (shell-command-to-string "compgen -c") "\n")
+                                  :action (lambda (cmd)
+                                            (start-process cmd nil cmd))))
+
+                       ((string= selection "close-buffer")
+                        (kill-buffer))
+
+                       ((string= selection "lsp")
+                        (lsp))
+
+                       ((string= selection "pacman")
+                        (olivia/pacman))
+
+                       ((string= selection "M-x")
+                        (call-interactively 'execute-extended-command))))))
+
+(exwm-input-set-key (kbd "M-x") 'olivia/M-x)

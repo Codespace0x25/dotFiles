@@ -1,0 +1,17 @@
+;; Load the dashboard package
+(require 'dashboard)
+
+;; Set up the dashboard
+(dashboard-setup-startup-hook)
+;; Customize the dashboard
+(setq dashboard-banner-logo-title "Welcome, Olivia!" ;; Title displayed at the top
+      dashboard-center-content t                          ;; Center the dashboard content
+      dashboard-items '((recents . 50))                    ;; Show the top 5 recent files
+      dashboard-set-navigator t                           ;; Show shortcut keys at the bottom
+      dashboard-show-shortcuts t                        ;; Optional: Hide shortcuts section
+      dashboard-set-heading-icons t                       ;; Display icons next to headings
+      dashboard-set-file-icons t                          ;; Display file icons
+      )
+
+(add-hook 'after-make-frame-functions 'dashboard-open)
+(setq initial-buffer-choice (lambda () (dashboard-open)))

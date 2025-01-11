@@ -1,0 +1,16 @@
+
+(defvar ollama-url "http://localhost:5005")  ;; Set Ollama URL here (adjust the port if needed)
+
+(defun ollama-send-request (prompt)
+  "Send a prompt to Ollama and return the response."
+  (let ((url-request-method "POST")
+        (url-request-data (json-encode `(("input" . ,prompt)))))
+    (url-retrieve
+     ollama-url
+     (lambda (status)
+       (if (plist-get status :error)
+           (message "Error: %s" (plist-get status :error))
+         (goto-char url-http-end-of-headers)
+         (let ((response (json-read)))
+           (message "Ollama response: %s" (cdr (assoc 'text response))))))))
+

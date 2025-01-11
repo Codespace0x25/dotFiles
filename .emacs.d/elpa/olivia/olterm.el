@@ -1,0 +1,9 @@
+(require 'vterm)
+
+(defun olivia/new-vterm ()
+  "Open a new vterm buffer with a unique name."
+  (interactive)
+  (let* ((vterm-name (generate-new-buffer-name "vterm")))
+    (vterm vterm-name)))
+
+(provide 'olivia-term)
