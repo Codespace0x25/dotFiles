@@ -78,6 +78,7 @@
 
 (defun olivia/save-histories ()
   "Save history variables to a file."
+  (interactive)
   (with-temp-file "~/.emacs.d/olivia-histories.el"
     (insert (format "(setq olivia/search-web-history '%S)\n" olivia/search-web-history))
     (insert (format "(setq olivia/youtube-search-history '%S)\n" olivia/youtube-search-history))
@@ -101,7 +102,7 @@
   (ivy-read (concat (getenv "USER") ": ")
             '(
 	      "M-x"
-              "web-search"
+              "🕸web-search"
               "web-search-youtube"
               "web-url-https"
               "web-url-http"
@@ -116,7 +117,7 @@
 	      )
             :action (lambda (selection)
 		      (cond
-                       ((string= selection "web-search")
+                       ((string= selection "🕸web-search")
                         (ivy-read "Enter search query: "
                                   (delete-dups olivia/search-web-history)
                                   :action (lambda (query)

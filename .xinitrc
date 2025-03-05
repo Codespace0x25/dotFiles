@@ -12,11 +12,15 @@ exec /home/olivia/Documents/client/echo/src/main &
 # Set keyboard repeat rate.
 xset r rate 200 60
 
-# Uncomment the following block to use the exwm-xim module.
-#export XMODIFIERS=@im=exwm-xim
-#export GTK_IM_MODULE=xim
-#export QT_IM_MODULE=xim
-#export CLUTTER_IM_MODULE=xim
+export QT_QPA_PLATFORMTHEME="qt5ct"                # Set Qt platform theme
+export GTK_THEME="catppuccin-macchiato-maroon-standard+default"  # Set GTK theme
+export GTK_ICON_THEME="Adwaita"                    # Set GTK icon theme
+export GDK_SCALE=1                                 # Set scale for GTK
+export GDK_DPI_SCALE=1                             # Set DPI scale for GTK
+export NIXPKGS_ALLOW_UNFREE=1
+export EDITOR="emacsclient -c -a ''"
+export VISUAL="emacsclient -c -a ''"
 
 # Finally start Emacs
 exec emacsclient -a "" -c
+ 

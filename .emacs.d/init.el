@@ -10,7 +10,7 @@
 ;; Install missing packages
 (dolist (pkg '(exwm evil which-key ivy naga-theme doom-modeline nix-modeline
                     lsp-mode lsp-ui company smartparens vterm company-box pipewire
-		    undo-tree vterm-toggle rust-mode beacon buffer-move minibar dashboard))
+		    undo-tree vterm-toggle rust-mode beacon buffer-move minibar dashboard ivy-posframe))
   (unless (package-installed-p pkg)
     (unless package-archive-contents
       (package-refresh-contents))
@@ -34,9 +34,10 @@
 (require 'pipewire)
 (require 'undo-tree)
 (require 'window)
-(require 'exwm-randr)
 (require 'beacon)
 (require 'buffer-move)
+(require 'exwm-randr)
+(require 'project)
 
 
 
@@ -65,6 +66,8 @@
 (add-hook 'c++-mode-hook 'lsp)
 (setq lsp-clients-clangd-executable "clangd")
 (setq lsp-prefer-capf t)  ;; Use completion-at-point for better integration
+
+
 
 ;; Enable LSP UI features
 (setq lsp-ui-doc-enable t)
@@ -120,18 +123,16 @@
         ([?\C-y] . C-v)))
 
 
+
 ;; EXWM RandR setup for multi-monitor configuration
 (setq exwm-randr-workspace-monitor-plist '(0 "HDMI-0" 1 "DP-1"))
 
-(defun my/exwm-randr-setup ()
-  "Configure screen layout with EXWM-Randr."
-  (start-process-shell-command
-   "xrandr" nil
-   "xrandr --output DP-1  --mode 1920x1080 --pos 0x0 --rotate normal \
-            --output HDMI-0 --primary --mode 1920x1080 --pos 1920x0 --rotate normal")
-  (exwm-randr-enable))
+(start-process-shell-command
+ "xrandr" nil
+ "xrandr --output DP-1  --mode 1920x1080 --pos 0x0 --rotate normal \
+          --output HDMI-0 --primary --mode 1920x1080 --pos 1920x0 --rotate normal")
+(exwm-randr-mode 1)
 
-(my/exwm-randr-setup)
 (exwm-systemtray-mode 1)
 
 (exwm-input-set-key (kbd "M-x") 'olivia/M-x)
@@ -176,7 +177,37 @@
 (exwm-input-set-key (kbd "s-C-j") 'buf-move-down)
 (exwm-input-set-key (kbd "s-C-h") 'buf-move-left)
 (exwm-input-set-key (kbd "s-C-l") 'buf-move-right)
-(exwm-input-set-key (kbd "s-f") 'exwm-layout-toggle-fullscreed)
+(exwm-input-set-key (kbd "s-f") 'exwm-layout-toggle-fullscreen)
+(exwm-input-set-key (kbd "C-c l s") '(lambda () (interactive) (async-shell-command "slock" nil "slock")))
+
+
+(defun olivia/detect-makefile-projects ()
+  "Detect all directories in home containing a Makefile and add them as projects."
+  (interactive)
+  (let ((home-dir (expand-file-name "~"))  ;; Home directory
+        (projects '()))  ;; List to store detected projects
+    (dolist (dir (directory-files home-dir t))
+      (when (and (file-directory-p dir)
+                 (not (member (file-name-nondirectory dir) '("." "..")))
+                 (file-exists-p (expand-file-name "Makefile" dir)))  ;; Check for Makefile
+        (push dir projects)))  ;; Add directory to list if it contains Makefile
+    (setq project--projects projects)  ;; Set projects for project.el
+    (message "Detected projects: %s" projects)))  ;; Optionally display the list
+;; Automatically detect Makefile projects when Emacs starts
+(add-hook 'emacs-startup-hook 'olivia/detect-makefile-projects)
+
+
+;; Call the function to detect projects when switching projects
+(setq project-switch-commands '((project-find-file "Find file")
+                                (project-find-regexp "Find regexp")
+                                (project-find-dir "Find directory")
+                                (project-vc "VCS status")))
+
+;; Keybinding to switch between detected projects
+(global-set-key (kbd "C-c p") 'project-switch-project)
+
+
+
 
 (defun olivia/exwm-update-class()
   (exwm-workspace-rename-buffer exwm-title))
@@ -242,7 +273,6 @@
 
 ;; Start picom for transparency and effects
 (start-process "picom" nil "picom" "-b")
-(start-process "virmant" nil "virt-manager")
 
 (setq-default line-spacing 2)
 
@@ -255,10 +285,32 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-enabled-themes '(naga))
  '(custom-safe-themes
-   '("5809de220efea8a12353469ae27afeb4c1138c6cb50b19703b37c9cc1c8767df" "448d7e6f9639189b0196dd43047f3d8e018a28a9d3318e64eea35699d93a535d" "a68ec832444ed19b83703c829e60222c9cfad7186b7aea5fd794b79be54146e6" default))
+   '("96cc35ec4a0b6ac2aa45549ddbafd488b0fce9d38f60d29a6c7b7f9e5cafb0ed"
+     default))
  '(package-selected-packages
-   '(emoji-display enotify zen-mode eterm-256color lsp-ivy erc-youtube ivy-youtube emoji-github pip projectile dashboard exwm-surf exwm-firefox-evil rust-mode ivy-emoji gameoflife frog-menu camera helm-twitch recently erc-colorize erc-scrolltoplace twitch twitch-api erc-twitch steam minibar helm-posframe which-key-posframe posframe company-posframe ivy-posframe minibuffer-header doom-modeline-now-playing awesome-tray telephone-line buffer-move becken beacon dashboard-ls dynamic-spaces dynamic-graphs gc-buffers async llm ellama request vterm-toggle binclock undo-tree adwaita-dark-theme fireplace pipewire company-box vterm nix-modeline nix-mode doom-modeline naga-theme nage ivy which-key exwm evil)))
+   '(adwaita-dark-theme async-status basic-theme beacon binclock
+			buffer-move camera company-box
+			company-posframe dashboard
+			doom-modeline-now-playing dynamic-graphs
+			dynamic-spaces efire ellama emoji-display
+			emoji-github enotify erc-colorize
+			erc-scrolltoplace erc-twitch erc-youtube
+			eterm-256color exwm-firefox-evil exwm-surf
+			exwm-x fireplace flycheck frog-menu gc-buffers
+			gdscript-mode glsl-mode google-maps
+			gradle-mode helm-twitch htmlize ivy-emoji
+			ivy-posframe ivy-youtube jabber keycast llm
+			lsp-ivy lsp-java lsp-javacomp lsp-ui
+			mini-header-line mini-modeline minibar
+			minibuffer-header naga-theme nasm-mode
+			nix-modeline org-notify pipewire popwin
+			recently rust-mode simple-modeline smartparens
+			sml-modeline steam svg-clock telephone-line
+			treemacs-evil treesit-auto undo-tree
+			vim-tab-bar vlc vterm-toggle
+			which-key-posframe zen-mode zig-mode)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
