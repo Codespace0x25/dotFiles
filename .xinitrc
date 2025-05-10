@@ -15,12 +15,12 @@ xset r rate 200 60
 export QT_QPA_PLATFORMTHEME="qt5ct"                # Set Qt platform theme
 export GTK_THEME="catppuccin-macchiato-maroon-standard+default"  # Set GTK theme
 export GTK_ICON_THEME="Adwaita"                    # Set GTK icon theme
-export GDK_SCALE=1                                 # Set scale for GTK
-export GDK_DPI_SCALE=1                             # Set DPI scale for GTK
+export GDK_SCALE=.9                                 # Set scale for GTK
+export GDK_DPI_SCALE=.9                             # Set DPI scale for GTK
 export NIXPKGS_ALLOW_UNFREE=1
 export EDITOR="emacsclient -c -a ''"
 export VISUAL="emacsclient -c -a ''"
 
 # Finally start Emacs
-exec emacsclient -a "" -c
+exec dbus-launch emacsclient -a "" -c
  

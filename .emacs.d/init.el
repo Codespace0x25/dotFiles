@@ -1,20 +1,26 @@
-;;; init.el ---
+;;; init.el ---  -*- lexical-binding: t; -*-
 ;; Ensure `package` is initialized
 (require 'package)
 (setq package-archives
-      '(("melpa" . "https://melpa.org/packages/")
-        ("gnu" . "https://elpa.gnu.org/packages/")
-        ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+      '(("melpa"        . "https://melpa.org/packages/")        ;; Main MELPA archive
+        ("melpa-stable" . "https://stable.melpa.org/packages/") ;; Stable version of MELPA
+        ("gnu"          . "https://elpa.gnu.org/packages/")     ;; Official GNU ELPA
+        ("nongnu"       . "https://elpa.nongnu.org/nongnu/")    ;; Non-GNU ELPA
+        ("org"          . "https://orgmode.org/elpa/")          ;; Org Mode ELPA
+        ("emacswiki"    . "https://mirrors.tuna.tsinghua.edu.cn/elpa/emacswiki/"))) ;; Mirror of EmacsWiki packages
 (package-initialize)
 
 ;; Install missing packages
-(dolist (pkg '(exwm evil which-key ivy naga-theme doom-modeline nix-modeline
+(dolist (pkg '(exwm evil which-key ivy naga-theme  nix-modeline simple-modeline
                     lsp-mode lsp-ui company smartparens vterm company-box pipewire
-		    undo-tree vterm-toggle rust-mode beacon buffer-move minibar dashboard ivy-posframe))
+		    undo-tree vterm-toggle rust-mode beacon buffer-move minibar dashboard ivy-posframe
+		    nerd-icons-dired smart-mode-line alert exwm-modeline empv
+		    ))
   (unless (package-installed-p pkg)
     (unless package-archive-contents
-      (package-refresh-contents))
-    (package-install pkg)))
+      (package-refresh-contents)
+    (package-install pkg)
+    (require 'pkg))))
 
 (load-file '"~/.emacs.d/elpa/olivia/menu.el")
 (load-file '"~/.emacs.d/elpa/olivia/efetch.el")
@@ -25,7 +31,6 @@
 (require 'which-key)
 (require 'ivy)
 (require 'naga-theme)
-(require 'doom-modeline)
 (require 'vterm)
 (require 'company)
 (require 'lsp)
@@ -43,7 +48,6 @@
 
 ;; Enable company-mode globally
 (global-company-mode 1)
-(beacon-mode 1)
 
 ;; Configure company settings
 (setq company-idle-delay 0.2)  ;; Time before suggestions appear
@@ -60,7 +64,6 @@
 
 ;; Keybindings for company
 (define-key evil-normal-state-map (kbd "C-c C-c") 'company-complete)
-
 ;; LSP configuration for C/C++
 (add-hook 'c-mode-hook 'lsp)
 (add-hook 'c++-mode-hook 'lsp)
@@ -80,6 +83,9 @@
 
 (add-hook 'c-mode-hook 'lsp-ui-mode)
 (add-hook 'c++-mode-hook 'lsp-ui-mode)
+(add-hook 'dired-mode-hook
+          (lambda ()
+            (nerd-icons-dired-mode)))
 
 ;; Smartparens configuration for automatic bracket pairing(add-hook 'prog-mode-hook 'smartparens-mode)
 (add-hook 'text-mode-hook 'smartparens-mode)
@@ -88,10 +94,31 @@
 
 ;; Doom modeline setup
 (ivy-posframe-mode 1)
-(doom-modeline-mode 1)
+;;(keycast-mode-line-mode t)
+(alert-add-rule :status   '(buried visible idle)
+                :severity '(moderate high urgent)
+                :mode     'erc-mode
+                :predicate
+                #'(lambda (info)
+                    (string-match (concat "\\`[^&].*@BitlBee\\'")
+                                  (erc-format-target-and/or-network)))
+                :persistent
+                #'(lambda (info)
+                    ;; If the buffer is buried, or the user has been
+                    ;; idle for `alert-reveal-idle-time' seconds,
+                    ;; make this alert persistent.  Normally, alerts
+                    ;; become persistent after
+                    ;; `alert-persist-idle-time' seconds.
+                    (memq (plist-get info :status) '(buried idle)))
+                :style 'fringe
+                :continue t)
+(smartparens-global-mode 1)
 (load-theme 'naga 1)  ;; Load custom theme
 (menu-bar-mode -1)    ;; Disable the menu bar
 (tool-bar-mode -1)    ;; Disable the tool bar
+(tab-bar-mode -1)
+(vim-tab-bar-mode -1)
+;;(alert-mode-line-notify t)
 (scroll-bar-mode -1)  ;; Disable the scroll bar
 (global-set-key (kbd "C-c C-e") 'eval-buffer)
 ;; Enable Evil Mode for vim-like keybindings
@@ -164,8 +191,8 @@
 (exwm-input-set-key (kbd "s-=") (lambda () (interactive)(pipewire-increase-volume)))
 (exwm-input-set-key (kbd "s--") (lambda () (interactive)(pipewire-decrease-volume)))
 (exwm-input-set-key (kbd "s-0") (lambda () (interactive)(pipewire-toggle-muted)))
-(exwm-input-set-key (kbd "s-M-h") (lambda () (interactive) (exwm-workspace-switch 1)))
 (exwm-input-set-key (kbd "s-M-l") (lambda () (interactive) (exwm-workspace-switch 0)))
+(exwm-input-set-key (kbd "s-M-h") (lambda () (interactive) (exwm-workspace-switch 1)))
 ;; Evil mode keybindings for window navigation
 
 (exwm-input-set-key (kbd "s-h") 'windmove-left)
@@ -179,6 +206,10 @@
 (exwm-input-set-key (kbd "s-C-l") 'buf-move-right)
 (exwm-input-set-key (kbd "s-f") 'exwm-layout-toggle-fullscreen)
 (exwm-input-set-key (kbd "C-c l s") '(lambda () (interactive) (async-shell-command "slock" nil "slock")))
+
+(exwm-input-set-key (kbd "s-c") 'exwm-input-toggle-keyboard)
+
+
 
 
 (defun olivia/detect-makefile-projects ()
@@ -207,10 +238,8 @@
 (global-set-key (kbd "C-c p") 'project-switch-project)
 
 
-
-
 (defun olivia/exwm-update-class()
-  (exwm-workspace-rename-buffer exwm-title))
+  (exwm-workspace-rename-buffer  exwm-title))
 
 (add-hook 'exwm-update-title-hook
 	  #'olivia/exwm-update-class) 
@@ -250,17 +279,43 @@
 (defun my/evil-quit-advice (&rest _)
   "Prevent `evil-quit` from closing the last frame in EXWM."
   (if (and exwm-enabled
-           (= (length (frame-list)) 1) ;; Only one frame
-           (= (length (buffer-list)) 1)) ;; Only one buffer
+           (= (length (frame-list)) 1)
+           (= (length (buffer-list)) 1))
       (message "Cannot close the last buffer while in EXWM!")
-    t)) ;; Otherwise, allow quitting
+    t))
 
 (advice-add 'evil-quit :before-while #'my/evil-quit-advice)
 ;; Start EXWM
 (exwm-enable)
 
+(blink-cursor-mode 0)
+
+
+(require 'keycast)
+
+
+(setq-default mode-line-format
+              '(" "
+                (:eval (nerd-icons-icon-for-mode major-mode :height 1.0 :v-adjust -0.0))
+                (:eval (cond
+                        ((buffer-modified-p) " ✏️")
+                        ((not (file-exists-p (buffer-file-name))) " 🆕")
+                        ((file-locked-p (buffer-file-name)) " 🔒")
+                        (buffer-read-only " 🚫")
+                        (t " ✅")))
+                " "
+                "%b [%f] "
+                "(%c x %l) "
+                "%p "
+                " [" mode-name "]"
+                ))
+
+                                 
+
+
 ;; Optional: Start an initial buffer (scratch buffer)
 (setq initial-buffer-choice t)
+
 
 ;; Keybinding for LSP formatting
 (define-key evil-normal-state-map (kbd "C-c f") 'lsp-format-buffer)
@@ -273,6 +328,7 @@
 
 ;; Start picom for transparency and effects
 (start-process "picom" nil "picom" "-b")
+(start-process "dunst" nil "dunst")
 
 (setq-default line-spacing 2)
 
@@ -287,30 +343,36 @@
  ;; If there is more than one, they won't work right.
  '(custom-enabled-themes '(naga))
  '(custom-safe-themes
-   '("96cc35ec4a0b6ac2aa45549ddbafd488b0fce9d38f60d29a6c7b7f9e5cafb0ed"
+   '("fc1275617f9c8d1c8351df9667d750a8e3da2658077cfdda2ca281a2ebc914e0"
+     "96cc35ec4a0b6ac2aa45549ddbafd488b0fce9d38f60d29a6c7b7f9e5cafb0ed"
      default))
  '(package-selected-packages
-   '(adwaita-dark-theme async-status basic-theme beacon binclock
+   '(adwaita-dark-theme alert async-status basic-theme beacon binclock
 			buffer-move camera company-box
-			company-posframe dashboard
+			company-posframe dashboard diredfl
 			doom-modeline-now-playing dynamic-graphs
 			dynamic-spaces efire ellama emoji-display
-			emoji-github enotify erc-colorize
+			emoji-github empv enotify erc-colorize
 			erc-scrolltoplace erc-twitch erc-youtube
-			eterm-256color exwm-firefox-evil exwm-surf
-			exwm-x fireplace flycheck frog-menu gc-buffers
-			gdscript-mode glsl-mode google-maps
-			gradle-mode helm-twitch htmlize ivy-emoji
-			ivy-posframe ivy-youtube jabber keycast llm
-			lsp-ivy lsp-java lsp-javacomp lsp-ui
+			eshell-vterm eterm-256color exwm-firefox-evil
+			exwm-modeline exwm-surf exwm-x fireplace
+			flycheck flymake-nasm frog-menu gc-buffers
+			gdscript-mode github-clone glsl-mode
+			google-maps gradle-mode helm-twitch htmlize
+			ivy-emoji ivy-posframe ivy-youtube jabber
+			keycast llm lsp-ivy lsp-java lsp-javacomp
+			lsp-pyright lsp-python-ms lsp-ui
 			mini-header-line mini-modeline minibar
-			minibuffer-header naga-theme nasm-mode
-			nix-modeline org-notify pipewire popwin
-			recently rust-mode simple-modeline smartparens
+			minibuffer-header mood-line moody mpv
+			naga-theme nasm-mode nerd-icons-dired
+			nix-modeline open-color org-latex-impatient
+			org-notify pipewire popwin python-mls
+			python-mode python-x recently rust-mode
+			simple-modeline smart-mode-line smartparens
 			sml-modeline steam svg-clock telephone-line
 			treemacs-evil treesit-auto undo-tree
-			vim-tab-bar vlc vterm-toggle
-			which-key-posframe zen-mode zig-mode)))
+			vim-tab-bar vlc vterm-toggle websocket
+			which-key-posframe yang-mode zen-mode zig-mode)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
